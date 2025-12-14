@@ -17,12 +17,13 @@ Here's your "hello-world recipe":
 
 ```js
 import { aiTaskJSON } from 'aitask';
+import { createJSONSchema } from 'aitask/utils/createJSONSchema.js';
 
 const result = await aiTaskJSON({
   role: "You are a friendly cooking assistant.",
   task: "Give me a one-sentence recipe idea.",
   inputs: {},
-  outputs: { idea: "String | A short recipe idea" }
+  outputs: createJSONSchema({ idea: "String | A short recipe idea" })
 });
 
 console.log(result);
@@ -30,7 +31,7 @@ console.log(result);
 
 **Why use it?**
 - One unified API for *all* major LLMs
-- Guaranteed structured output (when using JSON Schema, see below)
+- Guaranteed structured output (when using JSON Schema)
 - Automatic fallback between models when rate-limited
 - Drop-in image support for vision models
 - Zero boilerplate — stays out of your way
