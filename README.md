@@ -16,7 +16,7 @@ aiTask is your all-in-one AI kitchen tool for Node.js. It gives you *one functio
 Here's your "hello-world recipe":
 
 ```js
-import { aiTaskJSON } from "aitask";
+import { aiTaskJSON } from 'aitask';
 
 const result = await aiTaskJSON({
   role: "You are a friendly cooking assistant.",
@@ -30,7 +30,7 @@ console.log(result);
 
 **Why use it?**
 - One unified API for *all* major LLMs
-- Guaranteed structured output (using real JSON Schema)
+- Guaranteed structured output (when using JSON Schema, see below)
 - Automatic fallback between models when rate-limited
 - Drop-in image support for vision models
 - Zero boilerplate — stays out of your way
@@ -52,6 +52,40 @@ OPENAI_API_KEY=your_openai_api_key
 OPENROUTER_KEY=your_openrouter_key
 ```
 
+## ⭐ Quickstart
+
+Let's cook up a structured recipe using strict JSON Schema. This shows aiTask's power: pass a list of ingredients, get a fully structured response with enforced schema.
+
+```javascript
+import { aiTaskJSON } from 'aitask';
+import { createJSONSchema } from 'aitask/utils/createJSONSchema.js';
+
+const RecipeSchema = createJSONSchema({
+  name: "String | Name of the dish",
+  prepTime: "Number | Minutes needed",
+  difficulty: 'Enum | ["easy", "medium", "hard"]',
+  ingredients: [
+    {
+      name: "String | Ingredient name",
+      quantity: "Number | Amount",
+      unit: "String | Measurement unit (e.g. grams)",
+    }
+  ],
+  steps: ["Paragraph | Step-by-step instructions"],
+});
+
+const recipe = await aiTaskJSON({
+  role: "You are a Michelin-star chef.",
+  task: "Create a recipe based on these ingredients.",
+  inputs: { ingredients: ["chicken", "rice", "garlic"] },
+  outputs: RecipeSchema,
+});
+
+console.log(recipe);
+```
+
+**Output:** A perfectly structured JSON object with name, prep time, difficulty level, ingredients list, and steps. The schema ensures the LLM follows the rules exactly — no malformed JSON or missing fields.
+
 ## Core Concepts
 
 aiTask provides one function (`aiTaskJSON`) that handles everything: provider selection, prompt building, caching, and structured output.
@@ -65,7 +99,8 @@ aiTask supports two ways to get structured responses:
 Pass a real JSON Schema object (via `createJSONSchema`). The provider enforces the structure — no guesswork, no errors.
 
 ```javascript
-import { createJSONSchema } from "aitask";
+import { aiTaskJSON } from 'aitask';
+import { createJSONSchema } from 'aitask/utils/createJSONSchema.js';
 
 const schema = createJSONSchema({
   recipies: [{
@@ -97,39 +132,6 @@ outputs: {
 
 **Rule of thumb:** Use `createJSONSchema` for strict outputs, plain objects for exploration.
 
-## ⭐ Quickstart
-
-Let's cook up a structured recipe using strict JSON Schema. This shows aiTask's power: pass a list of ingredients, get a fully structured response with enforced schema.
-
-```javascript
-import { aiTaskJSON, createJSONSchema } from "aitask";
-
-const RecipeSchema = createJSONSchema({
-  name: "String | Name of the dish",
-  prepTime: "Number | Minutes needed",
-  difficulty: 'Enum | ["easy", "medium", "hard"]',
-  ingredients: [
-    {
-      name: "String | Ingredient name",
-      quantity: "Number | Amount",
-      unit: "String | Measurement unit (e.g. grams)",
-    }
-  ],
-  steps: ["Paragraph | Step-by-step instructions"],
-});
-
-const recipe = await aiTaskJSON({
-  role: "You are a Michelin-star chef.",
-  task: "Create a recipe based on these ingredients.",
-  inputs: { ingredients: ["chicken", "rice", "garlic"] },
-  outputs: RecipeSchema,
-});
-
-console.log(recipe);
-```
-
-**Output:** A perfectly structured JSON object with name, prep time, difficulty level, ingredients list, and steps. The schema ensures the LLM follows the rules exactly — no malformed JSON or missing fields.
-
 ## Provider Selection Rules
 
 aiTask picks the provider automatically — or you can force one:
@@ -152,18 +154,18 @@ aiTask picks the provider automatically — or you can force one:
 ## How aiTask Works
 
 ```
-(task + schema + inputs)
-        ↓
+  (task + schema + inputs)
+            ↓
 aiTask → Provider Adapter → LLM
-        ↓
-     Valid JSON
-        ↓
-      Cache
+            ↓
+        Valid JSON
+            ↓
+          Cache
 ```
 
 aiTask builds prompts, picks the right provider, handles images, calls the LLM, parses the response, and caches it for speed.
 
-## Real Use Cases (Recipe Themed)
+## Real Use Cases
 
 ### Recipe Generator
 
@@ -174,10 +176,10 @@ const recipe = await aiTaskJSON({
   role: "You are a chef",
   task: "Create a simple recipe",
   inputs: { ingredients: ["pasta", "tomatoes"] },
-  outputs: {
-    name: "String",
-    steps: ["String"]
-  }
+  outputs: createJSONSchema({
+    name: "String | name",
+    steps: ["String | description"]
+  })
 });
 ```
 
@@ -190,7 +192,7 @@ const normalized = await aiTaskJSON({
   role: "You are a kitchen assistant",
   task: "Normalize these ingredients",
   inputs: { messyList: ["2 cups flour", "1tbsp sugar"] },
-  outputs: {
+  outputs: createJSONSchema({
     ingredients: [
       {
         name: "String | Name",
@@ -198,7 +200,7 @@ const normalized = await aiTaskJSON({
         unit: "String | Unit of quantity"
       }
     ]
-  }
+  })
 });
 ```
 
@@ -213,11 +215,11 @@ const recipe = await aiTaskJSON({
   inputs: {
     images: ["fridge.jpg"]
   },
-  outputs: {
-    name: "String",
-    ingredients: ["String"],
-    steps: ["String"]
-  }
+  outputs: createJSONSchema({
+    name: "String | name",
+    ingredients: ["String | name"],
+    steps: ["String | description"]
+  })
 });
 ```
 
@@ -233,7 +235,10 @@ const recipe = await aiTaskJSON({
   role: "You are a chef",
   task: "Make a vegan recipe",
   inputs: { ingredients: ["beans", "rice"] },
-  outputs: { name: "String", steps: ["String"] }
+  outputs: createJSONSchema({
+    name: "String | name",
+    steps: ["String | description"]
+  })
 });
 ```
 
@@ -242,7 +247,9 @@ const recipe = await aiTaskJSON({
 Compress large input objects before sending to LLM — saves tokens and speeds up responses.
 
 ```javascript
-import { dataCompressor } from "aitask/utils/dataCompressor.js";
+import { aiTaskJSON } from 'aitask';
+import { dataCompressor } from 'aitask/utils/dataCompressor.js';
+import { createJSONSchema } from 'aitask/utils/createJSONSchema.js';
 
 // Before: Bloated array of similar ingredients
 const bloatedIngredients = [
@@ -252,14 +259,14 @@ const bloatedIngredients = [
 ];
 
 // After: Compressed into a clean object
-const compressed = dataCompressor(bloatedIngredients);
-// Result: { chicken: {quantity: 500, unit: "grams", notes: "organic"}, rice: {...}, ... }
+const compressed = dataCompressor(bloatedIngredients, {omit: ['*.notes']});
+// Result: { chicken: {quantity: 500, unit: "grams"}, rice: {...}, ... }
 
 const recipe = await aiTaskJSON({
   role: "You are a chef",
   task: "Create a recipe with these ingredients",
   inputs: { ingredients: compressed }, // Smaller, faster LLM call
-  outputs: { name: "String", steps: ["String"] }
+  outputs: createJSONSchema({ name: "String | name", steps: ["String | short description of the step"] })
 });
 ```
 
