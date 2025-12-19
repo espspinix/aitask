@@ -1,6 +1,5 @@
 // jsonSchemaConverter.js (ES6 Module)
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 
 /**
  * Checks if the input is already a Zod schema.
@@ -89,7 +88,7 @@ function parseStringDescription(descriptionString) {
     }
 
     if (isOptional) {
-      zType = zType.optional();
+      zType = zType.optional().nullable();
     }
   }
 
@@ -141,7 +140,7 @@ function convertToZod(input) {
             zodObject[key] = z.array(convertToZod(value[0]));
             // Check for optional array type, e.g., ['type', 'optional']
             if (value[1] && value[1] === 'optional') {
-              zodObject[key] = zodObject[key].optional();
+              zodObject[key] = zodObject[key].optional().nullable();
             } else if (Array.isArray(value[0]) && value[1] === 'anyOf') {
               const schemas = value[0].map(convertToZod);
               zodObject[key] = z.array(z.union(schemas));
@@ -181,9 +180,9 @@ function convertToZod(input) {
  */
 export function createJSONSchema(input) {
   const zodSchema = isZodSchema(input) ? input : convertToZod(input);
-  return zodToJsonSchema(zodSchema, { 
-    target: 'openApi3',
-    allowedAdditionalProperties: undefined,
-    rejectedAdditionalProperties: undefined
-  });
+
+  return z.toJSONSchema(zodSchema, {
+    io: "input",
+    // reused: "ref" // try this at home first!
+  })
 }

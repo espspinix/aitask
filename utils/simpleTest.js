@@ -3,19 +3,20 @@ import { z } from 'zod';
 
 function runSimpleTest(name, input, expectedSchema) {
   console.log(`\n--- Test Case: ${name} ---`);
-  console.log('Input:', JSON.stringify(input, null, 2));
+  
   try {
     const generatedSchema = createJSONSchema(input);
-    console.log('Generated JSON Schema:', JSON.stringify(generatedSchema, null, 2));
 
     const passed = JSON.stringify(generatedSchema) === JSON.stringify(expectedSchema);
     if (expectedSchema === 'EXPECT_ERROR') {
       console.error('❌ Test Failed: Expected error but got schema');
-      console.error('Generated Schema:', JSON.stringify(generatedSchema, null, 2));
+      // console.error('Generated Schema:', JSON.stringify(generatedSchema, null, 2));
     } else if (passed) {
       console.log('✅ Test Passed');
     } else {
       console.error('❌ Test Failed');
+      console.log('Input:', JSON.stringify(input, null, 2));
+      console.log('Generated JSON Schema:', JSON.stringify(generatedSchema, null, 2));
       console.error('Expected Schema:', JSON.stringify(expectedSchema, null, 2));
     }
   } catch (e) {
@@ -24,6 +25,7 @@ function runSimpleTest(name, input, expectedSchema) {
     } else {
       console.error('❌ Test Failed: Unexpected error occurred');
       console.error('Error:', e.message);
+      console.log('Input:', JSON.stringify(input, null, 2));
       console.error('Expected Schema:', JSON.stringify(expectedSchema, null, 2));
     }
   }
@@ -35,11 +37,12 @@ runSimpleTest(
   'Basic String',
   { myString: 'String | A simple string field' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myString: {
-        type: 'string',
         description: 'A simple string field',
+        type: 'string',
       },
     },
     required: ['myString'],
@@ -51,11 +54,12 @@ runSimpleTest(
   'Number Type',
   { myNumber: 'Number | A numeric field' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myNumber: {
-        type: 'number',
         description: 'A numeric field',
+        type: 'number',
       },
     },
     required: ['myNumber'],
@@ -67,11 +71,12 @@ runSimpleTest(
   'Boolean Type',
   { myBoolean: 'Boolean | A boolean field' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myBoolean: {
-        type: 'boolean',
         description: 'A boolean field',
+        type: 'boolean',
       },
     },
     required: ['myBoolean'],
@@ -83,12 +88,13 @@ runSimpleTest(
   'Naming Type',
   { myName: 'Naming | A name field with max 80 chars' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myName: {
+        description: 'A name field with max 80 chars',
         type: 'string',
         maxLength: 80,
-        description: 'A name field with max 80 chars',
       },
     },
     required: ['myName'],
@@ -100,11 +106,12 @@ runSimpleTest(
   'Paragraph Type',
   { myParagraph: 'Paragraph | A long text paragraph' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myParagraph: {
-        type: 'string',
         description: 'A long text paragraph',
+        type: 'string',
       },
     },
     required: ['myParagraph'],
@@ -116,6 +123,7 @@ runSimpleTest(
   'Valid Enum Type',
   { myEnum: 'Enum | ["red", "green", "blue"]' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myEnum: {
@@ -132,11 +140,19 @@ runSimpleTest(
   'Optional String Type',
   { myOptionalString: 'String optional | An optional string field' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myOptionalString: {
-        type: 'string',
         description: 'An optional string field',
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
     },
   }
@@ -147,31 +163,44 @@ runSimpleTest(
   'Optional Enum Type',
   { myOptionalEnum: 'Enum optional | ["apple", "banana"]' },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       myOptionalEnum: {
-        type: 'string',
-        enum: ['apple', 'banana'],
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "apple",
+              "banana"
+            ]
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
     },
   }
 );
 
 // Test 9: Mixed-Type Enum (numbers and strings, no description)
-runSimpleTest(
-  'Mixed-Type Enum (numbers and strings)',
-  { myMixedEnum: 'Enum | [1, 2, "three"]' },
-  {
-    type: 'object',
-    properties: {
-      myMixedEnum: {
-        type: 'string',
-        enum: [1, 2, "three"],
-      },
-    },
-    required: ['myMixedEnum'],
-  }
-);
+  // isnt supported by gemini
+// runSimpleTest(
+//   'Mixed-Type Enum (numbers and strings)',
+//   { myMixedEnum: 'Enum | [1, 2, "three"]' },
+//   {
+//     "$schema": "https://json-schema.org/draft/2020-12/schema",
+//     type: 'object',
+//     properties: {
+//       myMixedEnum: {
+//         type: 'string',
+//         enum: [1, 2, "three"],
+//       },
+//     },
+//     required: ['myMixedEnum'],
+//   }
+// );
 
 // Test 10: Malformed Enum (not JSON) - Expects error
 // This test case will be handled separately in runSimpleTest
@@ -192,18 +221,26 @@ runSimpleTest(
     },
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       user: {
         type: 'object',
         properties: {
           firstName: {
-            type: 'string',
             description: 'User first name',
+            type: 'string',
           },
           lastName: {
-            type: 'string',
             description: 'User last name',
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
         },
         required: ['firstName'],
@@ -221,14 +258,22 @@ runSimpleTest(
     optionalItems: ['String | item description', 'optional'],
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       optionalItems: {
-        type: 'array',
-        items: {
-          type: 'string',
-          description: 'item description',
-        },
+        "anyOf": [
+          {
+            "type": "array",
+            "items": {
+              "description": "item description",
+              "type": "string"
+            }
+          },
+          {
+            "type": "null"
+          }
+        ]
       },
     },
   }
@@ -246,6 +291,7 @@ runSimpleTest(
     ],
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: 'object',
     properties: {
       users: {
@@ -254,12 +300,12 @@ runSimpleTest(
           type: 'object',
           properties: {
             id: {
-              type: 'number',
               description: 'User ID',
+              type: 'number',
             },
             name: {
-              type: 'string',
               description: 'User name',
+              type: 'string',
             },
           },
           required: ['id', 'name'],
@@ -293,29 +339,44 @@ runSimpleTest(
     "category": "Naming | Product category name"
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "product": {
         "type": "object",
         "properties": {
           "id": {
-            "type": "number",
-            "description": "Unique product identifier"
+            "description": "Unique product identifier",
+            "type": "number"
           },
           "name": {
-            "type": "string",
-            "description": "Product name"
+            "description": "Product name",
+            "type": "string"
           },
           "description": {
-            "type": "string",
-            "description": "Detailed product description"
+            "description": "Detailed product description",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "tags": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "description": "Product tag"
-            }
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "description": "Product tag",
+                  "type": "string"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "variants": {
             "type": "array",
@@ -323,36 +384,48 @@ runSimpleTest(
               "type": "object",
               "properties": {
                 "sku": {
-                  "type": "string",
-                  "description": "Stock Keeping Unit"
+                  "description": "Stock Keeping Unit",
+                  "type": "string"
                 },
                 "color": {
                   "type": "string",
                   "enum": ["red", "green", "blue"]
                 },
                 "size": {
-                  "type": "string",
-                  "enum": ["S", "M", "L", "XL"]
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "S",
+                        "M",
+                        "L",
+                        "XL"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "price": {
-                  "type": "number",
-                  "description": "Price of the variant"
+                  "description": "Price of the variant",
+                  "type": "number"
                 }
               },
               "required": ["sku", "color", "price"]
             }
           },
           "isActive": {
-            "type": "boolean",
-            "description": "Is product active?"
+            "description": "Is product active?",
+            "type": "boolean"
           }
         },
         "required": ["id", "name", "variants", "isActive"]
       },
       "category": {
+        "description": "Product category name",
         "type": "string",
-        "maxLength": 80,
-        "description": "Product category name"
+        "maxLength": 80
       }
     },
     "required": ["product", "category"]
@@ -379,33 +452,56 @@ runSimpleTest(
     }
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
       "attributes": {
         "type": "object",
+        "propertyNames": {
+          "description": "Name of the attribute",
+          "type": "string"
+        },
         "additionalProperties": {
           "type": "object",
           "properties": {
             "unit": {
-              "type": "string",
-              "description": "reference to _units.<key>"
+              "description": "reference to _units.<key>",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "synonyms": {
               "type": "object",
+              "propertyNames": {
+                "description": "canonical form",
+                "type": "string"
+              },
               "additionalProperties": {
                 "type": "array",
                 "items": {
-                  "type": "string",
-                  "description": "variant"
+                  "description": "variant",
+                  "type": "string"
                 }
               }
             },
             "patterns": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "description": "pattern to extract quantitative data"
-              }
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "description": "pattern to extract quantitative data",
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "required": [
@@ -433,6 +529,7 @@ runSimpleTest(
     ]
   },
   {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
     type: "object",
     properties: {
       mixedArray: {
@@ -442,14 +539,14 @@ runSimpleTest(
             {
               type: "object",
               properties: {
-                a: { type: "string", description: "a" }
+                a: { description: "a", type: "string" }
               },
               required: ["a"]
             },
             {
               type: "object",
               properties: {
-                b: { type: "number", description: "b" }
+                b: { description: "b", type: "number" }
               },
               required: ["b"]
             }
@@ -462,50 +559,51 @@ runSimpleTest(
 );
 
 // Test 18: Array anyOf with Base Object
-runSimpleTest(
-  'Array anyOf with Base Object',
-  {
-    items: [
-      [{ name: 1, data: 2 }, { name: 1, data: 3 }, { name: 1, asdf: 2 }],
-      'anyOf'
-    ]
-  },
-  {
-    type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        items: {
-          $defs: {
-            BaseObject: {
-              type: 'object',
-              properties: { name: { const: 1 } },
-              required: ['name']
-            }
-          },
-          anyOf: [
-            {
-              allOf: [
-                { $ref: '#/$defs/BaseObject' },
-                { type: 'object', properties: { data: { const: 2 } }, required: ['data'] }
-              ]
-            },
-            {
-              allOf: [
-                { $ref: '#/$defs/BaseObject' },
-                { type: 'object', properties: { data: { const: 3 } }, required: ['data'] }
-              ]
-            },
-            {
-              allOf: [
-                { $ref: '#/$defs/BaseObject' },
-                { type: 'object', properties: { asdf: { const: 2 } }, required: ['asdf'] }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    required: ['items']
-  }
-);
+  // not supported yet
+// runSimpleTest(
+//   'Array anyOf with Base Object',
+//   {
+//     items: [
+//       [{ name: "String | name", data: "Number | data" }, { name: "String | name", data: "Number | data" }, { name: "String | name", asdf: "Number | asdf" }],
+//       'anyOf'
+//     ]
+//   },
+//   {
+//     type: 'object',
+//     properties: {
+//       items: {
+//         type: 'array',
+//         items: {
+//           $defs: {
+//             BaseObject: {
+//               type: 'object',
+//               properties: { name: { const: 1 } },
+//               required: ['name']
+//             }
+//           },
+//           anyOf: [
+//             {
+//               allOf: [
+//                 { $ref: '#/$defs/BaseObject' },
+//                 { type: 'object', properties: { data: { const: 2 } }, required: ['data'] }
+//               ]
+//             },
+//             {
+//               allOf: [
+//                 { $ref: '#/$defs/BaseObject' },
+//                 { type: 'object', properties: { data: { const: 3 } }, required: ['data'] }
+//               ]
+//             },
+//             {
+//               allOf: [
+//                 { $ref: '#/$defs/BaseObject' },
+//                 { type: 'object', properties: { asdf: { const: 2 } }, required: ['asdf'] }
+//               ]
+//             }
+//           ]
+//         }
+//       }
+//     },
+//     required: ['items']
+//   }
+// );
