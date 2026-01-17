@@ -1,0 +1,7 @@
+utils/simpleTest.js
+utils/testDataCompressor.js
+.env
+.clineignore
+.cache/
+node_modules/
+.github/workflows/publish.yml
